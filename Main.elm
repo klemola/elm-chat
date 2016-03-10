@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Events exposing (..)
 import Html.Attributes exposing (..)
 import Time exposing (Time)
+import Date exposing (fromTime)
 import Signal exposing (Signal)
 
 
@@ -40,6 +41,24 @@ type alias Model =
 
 
 
+-- helpers
+
+
+msgTime : Time -> String
+msgTime timestamp =
+  let
+    date =
+      fromTime timestamp
+  in
+    (toString (Date.hour date)) ++ ":" ++ (toString (Date.minute date))
+
+
+gutter : Attribute
+gutter =
+  style [ ( "margin-right", "5px" ) ]
+
+
+
 -- update
 
 
@@ -73,6 +92,29 @@ userMessage state time =
 -- view
 
 
+messages : Model -> Html
+messages model =
+  div
+    []
+    [ ul
+        []
+        (model.history
+          |> List.reverse
+          |> List.map message
+        )
+    ]
+
+
+message : Message -> Html
+message msg =
+  li
+    []
+    [ span [ gutter ] [ text (msgTime msg.sentOn) ]
+    , span [ gutter ] [ text msg.sentBy.name ]
+    , span [] [ text msg.content ]
+    ]
+
+
 inputArea : Model -> Html
 inputArea model =
   div
@@ -102,6 +144,7 @@ view heading model =
   div
     []
     [ text heading
+    , messages model
     , inputArea model
     ]
 
