@@ -128,6 +128,7 @@ messageInput : String -> Html
 messageInput currentInput =
   input
     [ placeholder "Your message..."
+    , autofocus True
     , value currentInput
     , on "input" targetValue (\str -> Signal.message actions.address (Input str))
     ]
@@ -151,7 +152,7 @@ view heading model =
 
 html : Model -> Html
 html model =
-  view "Chat" model
+  view "Convo" model
 
 
 
