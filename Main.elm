@@ -16,6 +16,7 @@ type Action
 
 type StateChange
   = UserAction ( Time, Action )
+  | Response ( Time, Bool )
 
 
 type alias Person =
@@ -58,6 +59,14 @@ gutter =
   style [ ( "margin-right", "5px" ) ]
 
 
+mockResponse : Time -> Message
+mockResponse time =
+  { content = "hodor"
+  , sentBy = { name = "Hodor" }
+  , sentOn = time
+  }
+
+
 
 -- update
 
@@ -66,18 +75,26 @@ update : StateChange -> Model -> Model
 update change state =
   case change of
     UserAction ( time, action ) ->
-      case action of
-        SendMessage ->
-          { state
-            | history = (userMessage state time) :: state.history
-            , input = ""
-          }
+      handleUserAction time action state
 
-        Input text ->
-          { state | input = text }
+    Response ( time, bool ) ->
+      { state | history = (mockResponse time) :: state.history }
 
-        NoOp ->
-          state
+
+handleUserAction : Time -> Action -> Model -> Model
+handleUserAction time action state =
+  case action of
+    SendMessage ->
+      { state
+        | history = (userMessage state time) :: state.history
+        , input = ""
+      }
+
+    Input text ->
+      { state | input = text }
+
+    NoOp ->
+      state
 
 
 userMessage : Model -> Time -> Message
@@ -140,6 +157,11 @@ sendButton =
   button [ onClick actions.address SendMessage ] [ text "Send" ]
 
 
+mockMessageControl : Html
+mockMessageControl =
+  button [ onClick serverResponses.address True ] [ text "Mock response" ]
+
+
 view : String -> Model -> Html
 view heading model =
   div
@@ -147,6 +169,7 @@ view heading model =
     [ text heading
     , messages model
     , inputArea model
+    , mockMessageControl
     ]
 
 
@@ -177,9 +200,16 @@ actions =
   Signal.mailbox NoOp
 
 
+serverResponses : Signal.Mailbox Bool
+serverResponses =
+  Signal.mailbox True
+
+
 inputSignal : Signal StateChange
 inputSignal =
-  Signal.map UserAction (Time.timestamp actions.signal)
+  Signal.merge
+    (Signal.map UserAction (Time.timestamp actions.signal))
+    (Signal.map Response (Time.timestamp serverResponses.signal))
 
 
 model : Signal Model
