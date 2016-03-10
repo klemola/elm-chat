@@ -6,6 +6,7 @@ import Html.Attributes exposing (..)
 import Time exposing (Time)
 import Date exposing (fromTime)
 import Signal exposing (Signal)
+import String
 
 
 type Action
@@ -50,13 +51,19 @@ msgTime timestamp =
   let
     date =
       fromTime timestamp
+
+    pad n =
+      String.padLeft 2 '0' (toString n)
   in
-    (toString (Date.hour date)) ++ ":" ++ (toString (Date.minute date))
+    (pad (Date.hour date)) ++ ":" ++ (pad (Date.minute date))
 
 
-gutter : Attribute
-gutter =
-  style [ ( "margin-right", "5px" ) ]
+msgColor : Message -> String
+msgColor msg =
+  if msg.sentBy == mockUser then
+    "beige"
+  else
+    "pink"
 
 
 mockResponse : Time -> Message
@@ -109,12 +116,32 @@ userMessage state time =
 -- view
 
 
+header : String -> Html
+header heading =
+  div
+    [ style
+        [ ( "padding", "0.5rem" )
+        , ( "text-align", "center" )
+        ]
+    ]
+    [ h2 [] [ text heading ] ]
+
+
 messages : Model -> Html
 messages model =
   div
-    []
+    [ style
+        [ ( "padding-bottom", "3rem" )
+        , ( "overflow", "scroll" )
+        ]
+    ]
     [ ul
-        []
+        [ style
+            [ ( "list-style", "none" )
+            , ( "padding", "0" )
+            , ( "margin", "0" )
+            ]
+        ]
         (model.history
           |> List.reverse
           |> List.map message
@@ -125,17 +152,47 @@ messages model =
 message : Message -> Html
 message msg =
   li
-    []
-    [ span [ gutter ] [ text (msgTime msg.sentOn) ]
-    , span [ gutter ] [ text msg.sentBy.name ]
-    , span [] [ text msg.content ]
+    [ style
+        [ ( "background", msgColor msg )
+        , ( "padding", "0.3rem 0.5rem" )
+        , ( "display", "flex" )
+        ]
     ]
+    [ msgContent msg
+    , msgSentOn msg.sentOn
+    ]
+
+
+msgContent : Message -> Html
+msgContent msg =
+  span
+    [ style [ ( "flex", "5" ) ] ]
+    [ text (msg.sentBy.name ++ ": " ++ msg.content) ]
+
+
+msgSentOn : Time -> Html
+msgSentOn sentOn =
+  span
+    [ style
+        [ ( "flex", "1" )
+        , ( "text-align", "right" )
+        ]
+    ]
+    [ text (msgTime sentOn) ]
 
 
 inputArea : Model -> Html
 inputArea model =
   div
-    []
+    [ style
+        [ ( "display", "flex" )
+        , ( "position", "fixed" )
+        , ( "bottom", "0" )
+        , ( "width", "100%" )
+        , ( "border-top", "0.2rem solid #e5e5e5" )
+        , ( "height", "2.8rem" )
+        ]
+    ]
     [ messageInput model.input
     , sendButton
     ]
@@ -144,7 +201,14 @@ inputArea model =
 messageInput : String -> Html
 messageInput currentInput =
   input
-    [ placeholder "Your message..."
+    [ style
+        [ ( "flex", "5" )
+        , ( "border", "none" )
+        , ( "background", "#eee" )
+        , ( "padding", "0.5rem" )
+        , ( "font-size", "1.2rem" )
+        ]
+    , placeholder "Your message..."
     , autofocus True
     , value currentInput
     , on "input" targetValue (\str -> Signal.message actions.address (Input str))
@@ -154,22 +218,43 @@ messageInput currentInput =
 
 sendButton : Html
 sendButton =
-  button [ onClick actions.address SendMessage ] [ text "Send" ]
+  button
+    [ style
+        [ ( "flex", "1" )
+        , ( "background", "lightblue" )
+        , ( "color", "#345B80" )
+        , ( "border", "none" )
+        , ( "font-size", "1.2rem" )
+        , ( "padding", "0.5rem" )
+        ]
+    , (onClick actions.address SendMessage)
+    ]
+    [ text ">" ]
 
 
 mockMessageControl : Html
 mockMessageControl =
-  button [ onClick serverResponses.address True ] [ text "Mock response" ]
+  button
+    [ style
+        [ ( "width", "100%" )
+        , ( "background", "lightgreen" )
+        , ( "border", "none" )
+        , ( "font-size", "1rem" )
+        , ( "padding", "0.5rem" )
+        ]
+    , (onClick serverResponses.address True)
+    ]
+    [ text "Mock response" ]
 
 
 view : String -> Model -> Html
 view heading model =
   div
     []
-    [ text heading
+    [ header heading
+    , mockMessageControl
     , messages model
     , inputArea model
-    , mockMessageControl
     ]
 
 
